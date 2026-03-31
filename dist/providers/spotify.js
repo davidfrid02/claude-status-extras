@@ -3,13 +3,29 @@ import { existsSync } from 'node:fs';
 const RESET = '\x1b[0m';
 const GREEN = '\x1b[32m';
 const DIM = '\x1b[2m';
-const OSASCRIPT = `
+const SPOTIFY_SCRIPT = `
 tell application "System Events"
   if not (exists process "Spotify") then
     return "not_running"
   end if
 end tell
 tell application "Spotify"
+  set playerState to player state as string
+  if playerState is "stopped" then
+    return "not_running"
+  end if
+  set trackName to name of current track
+  set artistName to artist of current track
+  return playerState & "\\n" & trackName & "\\n" & artistName
+end tell
+`;
+const APPLE_MUSIC_SCRIPT = `
+tell application "System Events"
+  if not (exists process "Music") then
+    return "not_running"
+  end if
+end tell
+tell application "Music"
   set playerState to player state as string
   if playerState is "stopped" then
     return "not_running"
@@ -39,11 +55,9 @@ export function formatSpotify(data) {
     }
     return `${DIM}⏸ ${data.track} — ${data.artist}${RESET}`;
 }
-export function fetchSpotifySync() {
-    if (!existsSync('/Applications/Spotify.app'))
-        return null;
+function runOsascript(script) {
     try {
-        const stdout = execFileSync('osascript', ['-e', OSASCRIPT], {
+        const stdout = execFileSync('osascript', ['-e', script], {
             timeout: 2_000,
             encoding: 'utf8',
             stdio: ['pipe', 'pipe', 'ignore'],
@@ -53,5 +67,18 @@ export function fetchSpotifySync() {
     catch {
         return null;
     }
+}
+export function fetchSpotifySync() {
+    // Try Spotify first
+    if (existsSync('/Applications/Spotify.app')) {
+        const result = runOsascript(SPOTIFY_SCRIPT);
+        if (result)
+            return result;
+    }
+    // Fall back to Apple Music
+    const result = runOsascript(APPLE_MUSIC_SCRIPT);
+    if (result)
+        return result;
+    return null;
 }
 //# sourceMappingURL=spotify.js.map
