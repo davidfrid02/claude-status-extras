@@ -4,151 +4,121 @@ description: Install and configure the claude-status-extras statusline plugin
 allowed-tools: Bash, Read, Edit, AskUserQuestion, Write
 ---
 
-**Note**: This plugin is **macOS only** (requires osascript, Calendar.app).
+## Important UX Rules
 
-## Step 1: Check Platform
+- Do NOT show or explain bash commands to the user
+- Do NOT print detection results, paths, or debug info
+- Keep ALL technical output hidden — the user should only see friendly messages and the AskUserQuestion prompts
+- If a step fails, show a simple error message, not raw command output
 
-If Platform is not `darwin`, tell the user: "claude-status-extras only works on macOS." and STOP.
+## Step 1: Silent Detection (do not show output to user)
 
-## Step 2: Detect Environment
-
-1. Find the plugin install path:
-```bash
-config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-extras_dir=$(ls -d "${config_dir}"/plugins/cache/*/claude-status-extras/*/ 2>/dev/null | awk -F/ '{ print $(NF-1) "\t" $0 }' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -1 | cut -f2-)
-echo "$extras_dir"
-```
-
-If empty, ask the user where they cloned the repo.
-
-2. Check if claude-hud is installed:
-```bash
-grep -q "claude-hud" ~/.claude/plugins/installed_plugins.json 2>/dev/null && echo "HUD_INSTALLED" || echo "NO_HUD"
-```
-
-3. Detect Node.js runtime:
-```bash
-command -v node 2>/dev/null
-```
-
-## Step 3: Build the Plugin
+Run ALL of these in a single bash call, silently. Do not print results to the user:
 
 ```bash
-cd <extras_dir> && npm install && npm run build
+echo "PLATFORM:$(uname)" && \
+config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}" && \
+extras_dir=$(ls -d "${config_dir}"/plugins/cache/*/claude-status-extras/*/ 2>/dev/null | awk -F/ '{ print $(NF-1) "\t" $0 }' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -1 | cut -f2-) && \
+echo "EXTRAS:${extras_dir}" && \
+hud=$(grep -q "claude-hud" "${config_dir}/plugins/installed_plugins.json" 2>/dev/null && echo "YES" || echo "NO") && \
+echo "HUD:${hud}" && \
+echo "NODE:$(command -v node 2>/dev/null)"
 ```
 
-Verify `dist/index.js` exists after build.
+If platform is not Darwin, tell user "This plugin only works on macOS" and stop.
+If extras_dir is empty, tell user "Plugin not found. Run `/plugin install claude-status-extras` first." and stop.
 
-## Step 4: Feature Selection
+## Step 2: Silent Build (do not show output to user)
+
+Run silently:
+```bash
+cd <extras_dir> && npm install --silent 2>/dev/null && npm run build --silent 2>/dev/null && echo "BUILD:OK"
+```
+
+If build fails, tell user "Build failed. Please report this issue." and stop.
+
+## Step 3: Feature Selection
+
+Now show the FIRST interactive prompt to the user.
 
 Use AskUserQuestion:
-- header: "Features"
+- header: "claude-status-extras"
 - question: "Which features would you like to enable?"
 - multiSelect: true
 - options:
-  - "Calendar — Next meeting today from personal calendars"
-  - "Weather — Current conditions, auto-detected location"
-  - "Music — Now playing from Spotify or Apple Music"
-  - "Red Alert — Rocket/missile alerts for Israel (Pikud HaOref)"
+  - "📅 Calendar — Next meeting today from personal calendars"
+  - "🌤 Weather — Current conditions, auto-detected location"
+  - "🎧 Music — Now playing from Spotify or Apple Music"
+  - "🚀 Red Alert — Rocket/missile alerts for Israel (Pikud HaOref)"
 
-All features are enabled by default except Red Alert. If the user deselects a feature, note it for the config.
+## Step 4: Red Alert City (only if Red Alert was selected in Step 3)
 
-## Step 5: Red Alert City (only if Red Alert was selected)
-
-If the user selected "Red Alert" in Step 4:
+If the user selected Red Alert:
 
 Use AskUserQuestion:
 - header: "Red Alert Setup"
-- question: "Enter your city name in Hebrew (as it appears in Pikud HaOref)"
+- question: "Select your city (as it appears in Pikud HaOref):"
 - options:
   - "רעננה"
   - "תל אביב - יפו"
   - "ירושלים"
   - "חיפה"
   - "באר שבע"
-  - "Other — I'll type my city"
+  - "נתניה"
+  - "פתח תקווה"
+  - "ראשון לציון"
+  - "אשדוד"
+  - "Other — I'll type my city name"
 
-If the user picks "Other", ask them to type their city name in Hebrew.
+If "Other" is selected, ask the user to type their city name in Hebrew.
 
-Save the config:
+Then silently run:
 ```bash
 mkdir -p ~/.claude/plugins/claude-status-extras
 ```
 
 Write to `~/.claude/plugins/claude-status-extras/config.json`:
 ```json
-{
-  "alertCity": "<THE CITY THE USER CHOSE>"
-}
+{"alertCity":"<CITY>"}
 ```
 
-Tell the user: "Red Alert configured for <city>. The plugin checks every 30 seconds using the Pikud HaOref API. When there's an alert in your area, you'll see a flashing 🚀 ALERT line."
+Tell user: "✅ Red Alert configured for <city>."
 
-If the user did NOT select Red Alert, skip this step entirely.
+If Red Alert was NOT selected, skip this step.
 
-## Step 6: Configure statusLine
+## Step 5: Configure statusLine (silent)
 
-Update `~/.claude/settings.json` with the statusLine field, preserving all existing settings.
+Silently update `~/.claude/settings.json`, preserving all existing settings.
 
-**If claude-hud IS installed (chain mode):**
+**If claude-hud is installed:** Set statusLine command to `<extras_dir>/statusline.sh` (make sure to `chmod +x` it first).
 
-Make the wrapper executable and point to it:
-```bash
-chmod +x <extras_dir>/statusline.sh
-```
+**If claude-hud is NOT installed:** Set statusLine command to `bash -c 'exec <node_path> <extras_dir>/dist/index.js'`
 
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "<extras_dir>/statusline.sh"
-  }
-}
-```
+## Step 6: Done
 
-**If claude-hud is NOT installed (solo mode):**
+Tell the user:
 
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "bash -c 'exec <node_path> <extras_dir>/dist/index.js'"
-  }
-}
-```
+> ✅ **Setup complete!** Restart Claude Code to see your statusline.
+>
+> Your statusline will show:
 
-Replace `<node_path>` and `<extras_dir>` with the detected values from Step 2.
+Then list only the features they selected, e.g.:
+- 📅 Next meeting or "Free rest of day"
+- 🌤 Current weather
+- 🎧 Now playing track
+- 🚀 Red Alert when active in your area
 
-## Step 7: Test & Verify
-
-Test the command:
-```bash
-echo '{"model":{"display_name":"Test"},"cwd":"/tmp"}' | <the statusLine command>
-```
-
-If it produces output, tell the user:
-
-> ✅ Setup complete! **Please restart Claude Code** for the statusline to appear.
+Then:
 
 Use AskUserQuestion:
-- question: "After restarting, is the statusline working?"
+- question: "After restarting Claude Code, is the statusline working?"
 - options:
-  - "Yes, it's working!"
-  - "No, something's wrong"
+  - "Yes!"
+  - "No, I need help"
 
-**If yes**: Done! 🎉
-
-**If no**: Debug:
-1. Did you restart Claude Code? The statusline only appears after restart.
-2. Run the command manually and check for errors
-3. Weather takes a moment on first run — wait a few seconds
-4. For calendar issues: check System Settings > Internet Accounts has Calendars enabled, and Privacy & Security > Calendars allows your terminal
-
-## Display Reference
-
-| Feature | Display | Refresh |
-|---------|---------|---------|
-| Calendar | `📅 Standup in 25m` or `✓ Free rest of day` | 3 min |
-| Weather | `🌤 72°F` or `⛅ 16°C` | 30 min |
-| Music | `🎧 Track — Artist` or `⏸ Track — Artist` | 5 sec |
-| Red Alert | `🚀 ALERT: Rockets and Missiles` (flashing) | 30 sec |
+**If "No":**
+Tell user:
+1. Make sure you fully quit and reopened Claude Code
+2. Weather may take a few seconds to appear on first run
+3. If calendar shows "Free rest of day" unexpectedly — check System Settings > Internet Accounts has Calendars enabled for your email
+4. If nothing shows at all, run `/status-extras:setup` again
