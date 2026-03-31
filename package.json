@@ -1,0 +1,22 @@
+{
+  "name": "claude-status-extras",
+  "version": "0.1.0",
+  "description": "Statusline plugin for Claude Code: Spotify, Weather, and Calendar",
+  "type": "module",
+  "main": "dist/index.js",
+  "files": ["dist/", "src/", "commands/", ".claude-plugin/"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "npm run build && node --test"
+  },
+  "keywords": ["claude-code", "statusline", "spotify", "weather", "calendar"],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.0.0"
+  }
+}

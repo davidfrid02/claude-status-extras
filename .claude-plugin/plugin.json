@@ -1,0 +1,13 @@
+{
+  "name": "claude-status-extras",
+  "description": "Statusline extras for Claude Code — Spotify, Weather, and next Calendar meeting",
+  "version": "0.1.0",
+  "author": {
+    "name": "David Fried"
+  },
+  "commands": [
+    "./commands/setup.md"
+  ],
+  "license": "MIT",
+  "keywords": ["statusline", "spotify", "weather", "calendar", "claude-code"]
+}
