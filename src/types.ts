@@ -34,6 +34,12 @@ export interface CalendarData {
   minutesUntil: number;
 }
 
+export interface AlertData {
+  active: boolean;
+  title: string;  // English translation
+  area: string;   // Hebrew area name from API
+}
+
 export interface ProviderResult<T> {
   data: T | null;
   fetchedAt: number;

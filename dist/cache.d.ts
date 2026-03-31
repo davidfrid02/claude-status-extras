@@ -1,4 +1,4 @@
-import type { SpotifyData, WeatherData, CalendarData } from './types.js';
+import type { SpotifyData, WeatherData, CalendarData, AlertData } from './types.js';
 export interface CacheFile {
     spotify?: {
         data: SpotifyData | null;
@@ -10,6 +10,10 @@ export interface CacheFile {
     };
     calendar?: {
         data: CalendarData | null;
+        fetchedAt: number;
+    };
+    alert?: {
+        data: AlertData | null;
         fetchedAt: number;
     };
 }

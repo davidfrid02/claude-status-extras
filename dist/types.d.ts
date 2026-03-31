@@ -39,6 +39,11 @@ export interface CalendarData {
     title: string;
     minutesUntil: number;
 }
+export interface AlertData {
+    active: boolean;
+    title: string;
+    area: string;
+}
 export interface ProviderResult<T> {
     data: T | null;
     fetchedAt: number;

@@ -14,3 +14,12 @@ export function buildLine(
   if (segments.length === 0) return '';
   return segments.join(SEPARATOR);
 }
+
+export function buildOutput(
+  alertStr: string | null,
+  statusLine: string,
+): string {
+  if (alertStr && statusLine) return `${alertStr}\n${statusLine}`;
+  if (alertStr) return alertStr;
+  return statusLine;
+}

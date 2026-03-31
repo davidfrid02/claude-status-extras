@@ -7,4 +7,11 @@ export function buildLine(calendar, weather, spotify) {
         return '';
     return segments.join(SEPARATOR);
 }
+export function buildOutput(alertStr, statusLine) {
+    if (alertStr && statusLine)
+        return `${alertStr}\n${statusLine}`;
+    if (alertStr)
+        return alertStr;
+    return statusLine;
+}
 //# sourceMappingURL=render.js.map
