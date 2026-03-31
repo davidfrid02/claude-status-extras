@@ -1,12 +1,8 @@
-import { execFile } from 'node:child_process';
-import type { CalendarData, ProviderResult } from '../types.js';
+import { execFileSync } from 'node:child_process';
+import type { CalendarData } from '../types.js';
 
 const RESET = '\x1b[0m';
 const BLUE = '\x1b[94m';
-
-const CACHE_TTL = 3 * 60_000; // 3 minutes
-let cache: ProviderResult<CalendarData> = { data: null, fetchedAt: 0 };
-let fetching = false;
 
 const OSASCRIPT = `
 use framework "EventKit"
@@ -86,27 +82,15 @@ export function formatNoMeetings(): string {
   return `${BLUE}✓ Free rest of day${RESET}`;
 }
 
-function fetchCalendar(): void {
-  if (fetching) return;
-  fetching = true;
-  execFile('osascript', ['-e', OSASCRIPT], { timeout: 5_000 }, (err, stdout) => {
-    fetching = false;
-    if (err) {
-      cache = { data: null, fetchedAt: Date.now() };
-      return;
-    }
-    cache = { data: parseCalendarOutput(stdout), fetchedAt: Date.now() };
-  });
-}
-
-export function getCalendar(): CalendarData | null {
-  const elapsed = Date.now() - cache.fetchedAt;
-  if (elapsed > CACHE_TTL) {
-    fetchCalendar();
+export function fetchCalendarSync(): CalendarData | null {
+  try {
+    const stdout = execFileSync('osascript', ['-e', OSASCRIPT], {
+      timeout: 5_000,
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'ignore'],
+    });
+    return parseCalendarOutput(stdout);
+  } catch {
+    return null;
   }
-  return cache.data;
-}
-
-export function hasCalendarData(): boolean {
-  return cache.fetchedAt > 0;
 }
