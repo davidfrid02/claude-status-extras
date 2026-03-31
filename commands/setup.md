@@ -1,25 +1,50 @@
 ---
 name: status-extras:setup
 description: Install and configure the claude-status-extras statusline plugin
-allowed-tools: AskUserQuestion, Bash, Read, Edit, Write
+allowed-tools: Bash, Read, Edit, AskUserQuestion, Write
 ---
 
-Your FIRST action MUST be calling AskUserQuestion. Do NOT call Bash, Read, Edit, or any other tool first. Do NOT "detect environment" or "check platform" before asking. Call AskUserQuestion right now:
+## Step 1: Detect and Build
 
-header: "claude-status-extras setup"
-question: "Which features would you like to enable?"
-multiSelect: true
-options:
-  - "📅 Calendar — Next meeting today from personal calendars"
-  - "🌤 Weather — Current conditions, auto-detected location"
-  - "🎧 Music — Now playing from Spotify or Apple Music"
+1. Find the plugin path:
+```bash
+config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
+extras_dir=$(find "${config_dir}/plugins/cache" -path "*/claude-status-extras/*/dist/index.js" 2>/dev/null | head -1 | sed 's|/dist/index.js$||')/
+has_hud=$(grep -q "claude-hud" "${config_dir}/plugins/installed_plugins.json" 2>/dev/null && echo "yes" || echo "no")
+node_path=$(command -v node 2>/dev/null)
+chmod +x "${extras_dir}statusline.sh" 2>/dev/null
+echo "EXTRAS:${extras_dir} HUD:${has_hud} NODE:${node_path}"
+```
+
+If extras_dir is empty, tell user to run `/plugin install claude-status-extras` first and stop.
+
+## Step 2: Configure statusLine
+
+Read `~/.claude/settings.json` and update the statusLine field, preserving all other settings.
+
+- If has_hud is "yes": set statusLine command to `<extras_dir>statusline.sh`
+- If has_hud is "no": set statusLine command to `bash -c 'exec <node_path> <extras_dir>dist/index.js'`
+
+## Step 3: Optional Features
+
+After the statusLine is applied, ask the user which features to enable.
+
+Use AskUserQuestion:
+- header: "Extras"
+- question: "Enable any optional features? (Calendar, Weather, and Music are on by default)"
+- multiSelect: true
+- options:
   - "🚀 Red Alert — Rocket/missile alerts for Israel (Pikud HaOref)"
 
-After the user responds, if they selected "Red Alert", call AskUserQuestion again:
+**If user selects Red Alert**, proceed to Step 4.
+**If user selects nothing**, skip to Step 5.
 
-header: "Red Alert — City Selection"
-question: "Select your city (in Hebrew, as it appears in Pikud HaOref):"
-options:
+## Step 4: Red Alert City
+
+Use AskUserQuestion:
+- header: "Red Alert — City Selection"
+- question: "Select your city (in Hebrew, as it appears in Pikud HaOref):"
+- options:
   - "רעננה"
   - "תל אביב - יפו"
   - "ירושלים"
@@ -31,27 +56,36 @@ options:
   - "אשדוד"
   - "Other — I'll type my city name in Hebrew"
 
-If "Other", ask user to type their city.
+If "Other", ask the user to type their city name in Hebrew.
 
-After collecting all user choices, run this single Bash command (replace CITY with the user's city, or remove the config line if Red Alert was not selected):
-
+Write the config:
 ```bash
-config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}" && extras_dir=$(find "${config_dir}/plugins/cache" -path "*/claude-status-extras/*/dist/index.js" -exec dirname {} \; 2>/dev/null | head -1 | sed 's|/dist$||')/ && chmod +x "${extras_dir}statusline.sh" 2>/dev/null && has_hud=$(grep -q "claude-hud" "${config_dir}/plugins/installed_plugins.json" 2>/dev/null && echo "yes" || echo "no") && mkdir -p "${config_dir}/plugins/claude-status-extras" && echo '{"alertCity":"CITY"}' > "${config_dir}/plugins/claude-status-extras/config.json" && echo "DONE|${extras_dir}|${has_hud}"
+mkdir -p ~/.claude/plugins/claude-status-extras
 ```
 
-Then read `~/.claude/settings.json` and update the statusLine field:
-- If has_hud is "yes": set command to `<extras_dir>statusline.sh`
-- If has_hud is "no": set command to `bash -c 'exec node <extras_dir>dist/index.js'`
+Write `~/.claude/plugins/claude-status-extras/config.json`:
+```json
+{"alertCity":"<CITY>"}
+```
 
-Finally tell the user:
+Tell user: "Red Alert configured for <city>. Checks every 30 seconds."
 
-> ✅ **Setup complete!** Restart Claude Code to see your statusline.
+## Step 5: Verify & Finish
 
-And list the features they picked. Then call AskUserQuestion:
+Tell user:
 
-question: "After restarting, is it working?"
-options:
-  - "Yes, looks great!"
-  - "No, I need help"
+> ✅ Config written. **Please restart Claude Code** for the statusline to appear.
 
-If "No": suggest (1) restart Claude Code fully, (2) weather takes a few seconds first run, (3) calendar needs System Settings > Internet Accounts > Calendars enabled.
+Use AskUserQuestion:
+- question: "After restarting, is the statusline working?"
+- options:
+  - "Yes, it's working!"
+  - "No, something's wrong"
+
+**If yes**: Done!
+
+**If no**: Tell user:
+1. Make sure you fully quit and reopened Claude Code
+2. Weather takes a few seconds on first run
+3. Calendar needs System Settings > Internet Accounts > Calendars enabled
+4. For Red Alert — check `~/.claude/plugins/claude-status-extras/config.json` has your city
