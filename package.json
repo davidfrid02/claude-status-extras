@@ -4,14 +4,26 @@
   "description": "Statusline plugin for Claude Code: Spotify, Weather, and Calendar",
   "type": "module",
   "main": "dist/index.js",
-  "files": ["dist/", "src/", "commands/", ".claude-plugin/"],
+  "files": [
+    "dist/",
+    "src/",
+    "commands/",
+    ".claude-plugin/",
+    "statusline.sh"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "test": "npm run build && node --test"
   },
-  "keywords": ["claude-code", "statusline", "spotify", "weather", "calendar"],
+  "keywords": ["claude-code", "statusline", "spotify", "weather", "calendar", "monitoring"],
+  "author": "David Fried",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davidfrid02/claude-status-extras.git"
+  },
+  "homepage": "https://github.com/davidfrid02/claude-status-extras",
   "engines": {
     "node": ">=18.0.0"
   },

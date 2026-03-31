@@ -3,11 +3,14 @@
   "description": "Statusline extras for Claude Code — Spotify, Weather, and next Calendar meeting",
   "version": "0.1.0",
   "author": {
-    "name": "David Fried"
+    "name": "David Fried",
+    "url": "https://github.com/davidfrid02"
   },
   "commands": [
     "./commands/setup.md"
   ],
+  "homepage": "https://github.com/davidfrid02/claude-status-extras",
+  "repository": "https://github.com/davidfrid02/claude-status-extras",
   "license": "MIT",
-  "keywords": ["statusline", "spotify", "weather", "calendar", "claude-code"]
+  "keywords": ["statusline", "spotify", "weather", "calendar", "monitoring", "claude-code"]
 }

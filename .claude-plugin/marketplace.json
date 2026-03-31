@@ -1,0 +1,20 @@
+{
+  "name": "claude-status-extras",
+  "owner": {
+    "name": "David Fried",
+    "email": ""
+  },
+  "metadata": {
+    "description": "Statusline plugin for Claude Code — shows next calendar meeting, weather, and Spotify track",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "claude-status-extras",
+      "source": "./",
+      "description": "Shows your next calendar meeting, current weather, and Spotify track in the Claude Code statusline. Works standalone or alongside claude-hud.",
+      "category": "monitoring",
+      "tags": ["statusline", "spotify", "weather", "calendar", "monitoring", "claude-code"]
+    }
+  ]
+}
