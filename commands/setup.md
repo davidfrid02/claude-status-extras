@@ -5,119 +5,119 @@ description: Install and configure the claude-status-extras statusline plugin
 
 # Status Extras Setup
 
-Set up claude-status-extras to show Calendar, Weather, and Spotify in your Claude Code statusline.
+You MUST follow these steps IN ORDER. Do NOT skip any step. Do NOT assume anything is already configured. Execute each step even if you think setup was done before.
 
-**Platform:** macOS only (requires osascript, Calendar.app)
+## Step 1: Check Platform
 
-## Step 1: Detect Environment
+Run: `uname -s`
 
-1. Check the platform is macOS (`process.platform === 'darwin'`). If not, inform the user this plugin only works on macOS and stop.
+If the output is not `Darwin`, tell the user: "This plugin only works on macOS." and STOP.
 
-2. Find the plugin install path:
+## Step 2: Find Plugin Path
+
+Run this command and save the output as `extras_dir`:
+
 ```bash
-config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
-extras_dir=$(ls -d "${config_dir}"/plugins/cache/*/claude-status-extras/*/ 2>/dev/null \
-  | awk -F/ '{ print $(NF-1) "\t" $0 }' \
-  | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n \
-  | tail -1 | cut -f2-)
+config_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}" && ls -d "${config_dir}"/plugins/cache/*/claude-status-extras/*/ 2>/dev/null | awk -F/ '{ print $(NF-1) "\t" $0 }' | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n | tail -1 | cut -f2-
 ```
 
-If `extras_dir` is empty, the plugin is not installed via the plugin system. Check if the user cloned it manually and ask for the path.
+If empty, ask the user where they cloned the repo.
 
-3. Check if claude-hud is installed by reading `~/.claude/plugins/installed_plugins.json` for a key starting with `claude-hud`.
+## Step 3: Build
 
-4. Detect Node.js runtime: prefer `bun` if available, fall back to `node`.
-
-## Step 2: Build the Plugin
-
-Run in the plugin directory:
+Run:
 ```bash
-cd "$extras_dir" && npm install && npm run build
+cd <extras_dir> && npm install && npm run build
 ```
 
-Verify `dist/index.js` exists after build.
+Verify `dist/index.js` exists.
 
-## Step 3: Configure statusLine
+## Step 4: Configure statusLine
 
-Update `~/.claude/settings.json` with the `statusLine` field.
+Check if claude-hud is installed:
+```bash
+grep -q "claude-hud" ~/.claude/plugins/installed_plugins.json 2>/dev/null && echo "HUD_INSTALLED" || echo "NO_HUD"
+```
 
-### If claude-hud IS installed (chain mode):
-
-Point statusLine to the `statusline.sh` wrapper script which runs both plugins:
-
+**If HUD_INSTALLED:** Update `~/.claude/settings.json` and set:
 ```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "<extras_dir>/statusline.sh"
-  }
+"statusLine": {
+  "type": "command",
+  "command": "<extras_dir>/statusline.sh"
+}
+```
+Make sure `statusline.sh` is executable: `chmod +x <extras_dir>/statusline.sh`
+
+**If NO_HUD:** Update `~/.claude/settings.json` and set:
+```json
+"statusLine": {
+  "type": "command",
+  "command": "bash -c 'exec node <extras_dir>/dist/index.js'"
 }
 ```
 
-### If claude-hud is NOT installed (solo mode):
+Preserve all other existing settings in the file.
 
-Point statusLine directly to the plugin:
+## Step 5: Red Alert Configuration
 
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "bash -c 'exec <node> <extras_dir>/dist/index.js'"
-  }
-}
-```
+THIS STEP IS MANDATORY. You MUST ask the user this question. Do NOT skip it.
 
-Replace `<node>` with the detected runtime path and `<extras_dir>` with the resolved plugin path.
+Say EXACTLY this to the user:
 
-Make sure to preserve all other existing settings when writing to `settings.json`.
+> **Would you like to enable Red Alert notifications? (Israel only)**
+> This shows a flashing 🚀 ALERT in your statusbar when there's a rocket/missile alert in your area, using the Pikud HaOref (Home Front Command) API.
 
-## Step 4: Red Alert Configuration (Israel only)
+Then STOP and WAIT for the user to respond. Do not continue until they answer.
 
-Ask the user: **"Would you like to enable Red Alert notifications? (Israel only)"**
+**If the user says YES:**
 
-If yes:
+Say EXACTLY this:
 
-1. Ask: **"Enter your city name in Hebrew (e.g. רעננה, תל אביב, ירושלים):"**
-2. Save to `~/.claude/plugins/claude-status-extras/config.json`:
+> **Please enter your city name in Hebrew** (exactly as it appears in Pikud HaOref, e.g. רעננה, תל אביב - יפו, ירושלים, חיפה, באר שבע):
+
+STOP and WAIT for the user to type their city. Then run:
 
 ```bash
 mkdir -p ~/.claude/plugins/claude-status-extras
 ```
 
-Write the config file:
+Write this to `~/.claude/plugins/claude-status-extras/config.json`:
 ```json
-{
-  "alertCity": "<user's city in Hebrew>"
-}
+{"alertCity":"<THE CITY THE USER TYPED>"}
 ```
 
-3. Explain: "When there's an active alert in your area, you'll see a flashing 🚀 ALERT line in your statusbar. The plugin checks every 30 seconds using the Pikud HaOref API."
+Then say: "Red Alert is configured for <city>. The plugin checks every 30 seconds."
 
-If no, skip this step. The alert feature is entirely optional — it won't appear without a configured city.
+**If the user says NO:**
 
-## Step 5: Verify
+Say: "OK, Red Alert is disabled. You can enable it later by creating `~/.claude/plugins/claude-status-extras/config.json` with `{\"alertCity\":\"YOUR_CITY_IN_HEBREW\"}`"
 
-1. Tell the user to restart Claude Code.
-2. Ask if the statusline is showing.
-3. If not, debug:
-   - Run the statusLine command manually with test stdin: `echo '{"model":{"display_name":"Test"},"cwd":"/tmp"}' | <command>`
-   - Check the exit code is 0
-   - Check stderr for errors
-   - Verify `dist/index.js` exists
-   - On first run, weather takes a moment to fetch (uses wttr.in)
+## Step 6: Verify
 
-## Step 6: Calendar Permissions
+Run the statusline command with test input:
+```bash
+echo '{"model":{"display_name":"Test"},"cwd":"/tmp"}' | <the statusLine command from step 4>
+```
 
-If calendar shows "Free rest of day" but the user has events:
+If it produces output, say: "Setup complete! Restart Claude Code to see the statusline."
 
-1. Calendar.app must have events from the user's accounts. Open **System Settings > Internet Accounts** and verify the email account has **Calendars** enabled.
-2. The first run may trigger a macOS permission dialog for calendar access — the user must click **Allow**.
-3. Only personal (writable) calendars are shown. Subscribed calendars, Holidays, and Birthdays are excluded.
+If no output or error, debug:
+- Check `dist/index.js` exists
+- Check exit code is 0
+- Weather may take a moment on first run
 
-## Notes
+## Step 7: Calendar Info
 
-- **Spotify** is optional — if `/Applications/Spotify.app` doesn't exist, that section is hidden
-- **Weather** uses [wttr.in](https://wttr.in) — free, no API key, auto-detects location via IP, temperature units follow system locale
-- **Calendar** queries EventKit for the next event today across all personal calendars
-- **Red Alert** (optional, Israel only) — checks [Pikud HaOref](https://www.oref.org.il/) every 30s. Configure your city in `~/.claude/plugins/claude-status-extras/config.json`
-- Cache is stored at `/tmp/claude-status-extras-cache.json` with per-provider TTLs (Spotify: 5s, Weather: 30min, Calendar: 3min, Alert: 30s)
+Tell the user:
+
+> **Calendar note:** If calendar shows "Free rest of day" but you have events, make sure:
+> 1. Your email account is connected in **System Settings > Internet Accounts** with **Calendars** enabled
+> 2. Events are visible in Calendar.app
+> 3. Your terminal has calendar permission in **System Settings > Privacy & Security > Calendars**
+
+## Features
+
+- **Calendar** — next meeting today from personal calendars (3 min refresh)
+- **Weather** — auto-detected location via IP, locale-based units (30 min refresh)
+- **Music** — Spotify or Apple Music, whichever is playing (5 sec refresh)
+- **Red Alert** — optional, Israel only, Pikud HaOref API (30 sec refresh)
