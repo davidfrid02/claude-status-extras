@@ -71,7 +71,31 @@ Replace `<node>` with the detected runtime path and `<extras_dir>` with the reso
 
 Make sure to preserve all other existing settings when writing to `settings.json`.
 
-## Step 4: Verify
+## Step 4: Red Alert Configuration (Israel only)
+
+Ask the user: **"Would you like to enable Red Alert notifications? (Israel only)"**
+
+If yes:
+
+1. Ask: **"Enter your city name in Hebrew (e.g. רעננה, תל אביב, ירושלים):"**
+2. Save to `~/.claude/plugins/claude-status-extras/config.json`:
+
+```bash
+mkdir -p ~/.claude/plugins/claude-status-extras
+```
+
+Write the config file:
+```json
+{
+  "alertCity": "<user's city in Hebrew>"
+}
+```
+
+3. Explain: "When there's an active alert in your area, you'll see a flashing 🚀 ALERT line in your statusbar. The plugin checks every 30 seconds using the Pikud HaOref API."
+
+If no, skip this step. The alert feature is entirely optional — it won't appear without a configured city.
+
+## Step 5: Verify
 
 1. Tell the user to restart Claude Code.
 2. Ask if the statusline is showing.
@@ -82,7 +106,7 @@ Make sure to preserve all other existing settings when writing to `settings.json
    - Verify `dist/index.js` exists
    - On first run, weather takes a moment to fetch (uses wttr.in)
 
-## Step 5: Calendar Permissions
+## Step 6: Calendar Permissions
 
 If calendar shows "Free rest of day" but the user has events:
 
@@ -95,4 +119,5 @@ If calendar shows "Free rest of day" but the user has events:
 - **Spotify** is optional — if `/Applications/Spotify.app` doesn't exist, that section is hidden
 - **Weather** uses [wttr.in](https://wttr.in) — free, no API key, auto-detects location via IP, temperature units follow system locale
 - **Calendar** queries EventKit for the next event today across all personal calendars
-- Cache is stored at `/tmp/claude-status-extras-cache.json` with per-provider TTLs (Spotify: 5s, Weather: 30min, Calendar: 3min)
+- **Red Alert** (optional, Israel only) — checks [Pikud HaOref](https://www.oref.org.il/) every 30s. Configure your city in `~/.claude/plugins/claude-status-extras/config.json`
+- Cache is stored at `/tmp/claude-status-extras-cache.json` with per-provider TTLs (Spotify: 5s, Weather: 30min, Calendar: 3min, Alert: 30s)
