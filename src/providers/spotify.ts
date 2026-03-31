@@ -55,7 +55,7 @@ export function parseSpotifyOutput(output: string): SpotifyData | null {
 
 export function formatSpotify(data: SpotifyData): string {
   if (data.playing) {
-    return `${GREEN}♫ ${data.track} — ${data.artist}${RESET}`;
+    return `${GREEN}🎧 ${data.track} — ${data.artist}${RESET}`;
   }
   return `${DIM}⏸ ${data.track} — ${data.artist}${RESET}`;
 }

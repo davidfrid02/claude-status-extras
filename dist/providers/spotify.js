@@ -51,7 +51,7 @@ export function parseSpotifyOutput(output) {
 }
 export function formatSpotify(data) {
     if (data.playing) {
-        return `${GREEN}♫ ${data.track} — ${data.artist}${RESET}`;
+        return `${GREEN}🎧 ${data.track} — ${data.artist}${RESET}`;
     }
     return `${DIM}⏸ ${data.track} — ${data.artist}${RESET}`;
 }
