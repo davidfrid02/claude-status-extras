@@ -12,13 +12,19 @@ Works standalone or alongside [claude-hud](https://github.com/jarrodwatts/claude
 
 ## Installation
 
-### 1. Add the marketplace and install
+### 1. Add to the marketplace
 
 ```
-/plugin install davidfrid02/claude-status-extras
+/plugin marketplace add https://github.com/davidfrid02/claude-status-extras.git
 ```
 
-### 2. Run setup
+### 2. install the plugin
+
+```
+/plugin install claude-status-extras@claude-status-extras
+```
+
+### 3. Run setup
 
 ```
 /status-extras:setup
